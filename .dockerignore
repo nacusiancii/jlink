@@ -10,7 +10,6 @@ src/
 # keep the built JAR available for the Docker build
 target/*
 !target/*.jar
-target/
 src/
 .git
 **/*.class
