@@ -33,6 +33,13 @@ jobs:
       - name: Build with Maven
         run: mvn -B -DskipTests package
 
+      - name: List target directory for debugging
+        run: |
+          echo "PWD=$(pwd)"
+          ls -la
+          echo "--- target listing ---"
+          if [ -d target ]; then ls -la target; else echo "target directory does not exist"; fi
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
