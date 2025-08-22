@@ -1,5 +1,4 @@
-rc/main/java/com/nextory/poc/jlink/model/Book.java</path>
-ory.poc.jlink.model;
+package com.nextory.poc.jlink.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
