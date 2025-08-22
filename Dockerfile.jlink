@@ -1,8 +1,4 @@
-FROM eclipse-temurin:24-jdk AS build
-WORKDIR /workspace
-
-# Copy and build is already done by CI; copy unpacked app and custom_jre produced by jlink
-COPY unpack/ /workspace/unpack/
+FROM debian:buster-slim
 COPY custom_jre/ /opt/java/custom_jre/
 COPY target/*.jar /app/app.jar
 
