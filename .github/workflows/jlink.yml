@@ -44,14 +44,14 @@ jobs:
           jlink --verbose --add-modules $(cat ../deps.info) --compress 2 --no-header-files --no-man-pages --output custom_jre || true
           ls -la custom_jre || true
 
-      - name: Choose Dockerfile and build image
-        - name: Login to GitHub Container Registry
-          uses: docker/login-action@v2
-          with:
-            registry: ghcr.io
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and push jlink Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
