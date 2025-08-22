@@ -1,0 +1,16 @@
+FROM eclipse-temurin:24-jdk AS build
+WORKDIR /workspace
+
+# Copy and build is already done by CI; copy unpacked app and custom_jre produced by jlink
+COPY unpack/ /workspace/unpack/
+COPY custom_jre/ /opt/java/custom_jre/
+COPY target/*.jar /app/app.jar
+
+WORKDIR /app
+ENV JAVA_HOME=/opt/java/custom_jre
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+EXPOSE 8080
+ENTRYPOINT ["/opt/java/custom_jre/bin/java","-jar","/app/app.jar"]
+
+

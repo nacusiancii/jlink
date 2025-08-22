@@ -1,0 +1,60 @@
+name: Build image with jlink runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-jlink-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+
+      - name: Build fat JAR with Maven
+        run: mvn -B -DskipTests package
+
+      - name: Unpack JAR
+        run: |
+          mkdir -p unpack
+          cd unpack
+          jar xf ../target/*.jar
+          ls -la
+
+      - name: Run jdeps to compute module deps
+        run: |
+          cd unpack
+          jdeps --ignore-missing-deps -q --recursive --multi-release 17 --print-module-deps --class-path 'BOOT-INF/lib/*' ../target/*.jar > ../deps.info || true
+          echo "deps:" && cat ../deps.info
+
+      - name: Run jlink to create custom JRE
+        run: |
+          mkdir -p custom_jre
+          jlink --verbose --add-modules $(cat ../deps.info) --compress 2 --no-header-files --no-man-pages --output custom_jre || true
+          ls -la custom_jre || true
+
+      - name: Choose Dockerfile and build image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ${{ github.workspace }}/Dockerfile.jlink
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:jlink-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:jlink-latest
+
+      - name: Output image
+        run: echo "IMAGE=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:jlink-${{ github.sha }}" >> $GITHUB_OUTPUT
+
+
