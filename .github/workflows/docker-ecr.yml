@@ -52,9 +52,41 @@ jobs:
         with:
           context: .
           push: true
+          load: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+
+      - name: Show pushed image size
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
+          echo "Inspecting $IMAGE"
+          echo "-- local docker images --"
+          docker images --format 'table {{.Repository}}:{{.Tag}}	{{.Size}}'
+          echo "-- attempting inspect --"
+          SIZE_BYTES=$(docker image inspect "$IMAGE" --format '{{.Size}}' 2>/dev/null || true)
+          if [ -n "$SIZE_BYTES" ]; then
+            echo "Size bytes: $SIZE_BYTES"
+            if command -v numfmt >/dev/null 2>&1; then
+              echo "Human: $(numfmt --to=iec-i --suffix=B $SIZE_BYTES)"
+            fi
+          else
+            echo "Image not found locally; attempting remote manifest size via registry"
+            TOKEN="$GITHUB_TOKEN"
+            # Try manifest API (may require additional scopes for private packages)
+            curl -s -u ${{ github.actor }}:$TOKEN -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+              "https://ghcr.io/v2/${{ github.repository_owner }}/${{ github.event.repository.name }}/manifests/${{ github.sha }}" \
+              | jq '.layers | map(.size) | add' >/tmp/manifest_size 2>/dev/null || true
+            if [ -s /tmp/manifest_size ]; then
+              MANIFEST_BYTES=$(cat /tmp/manifest_size)
+              echo "Remote manifest total bytes: $MANIFEST_BYTES"
+              if command -v numfmt >/dev/null 2>&1; then
+                echo "Human: $(numfmt --to=iec-i --suffix=B $MANIFEST_BYTES)"
+              fi
+            else
+              echo "Could not determine remote image size."
+            fi
+          fi
 
       - name: Output image tag
         run: echo "IMAGE=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
