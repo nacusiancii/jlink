@@ -1,3 +1,15 @@
+
+# source / large dirs we don't need in image
+src/
+.git
+
+# compiled classes, IDE files
+**/*.class
+*.iml
+
+# keep the built JAR available for the Docker build
+target/*
+!target/*.jar
 target/
 src/
 .git
